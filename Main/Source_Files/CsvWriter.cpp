@@ -1,3 +1,4 @@
+#include <fstream>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -42,7 +43,15 @@ void CsvWriter::Write(pcpp::RawPacket *rawPacket, pcpp::PcapLiveDevice *device,
 }
 
 void CsvWriter::Flush() {
-  std::cout << m_outputFileName << "\n" << m_data.size() << std::endl;
+  std::ofstream outputFile;
+  outputFile.open(m_outputFileName);
+
+  outputFile << "srcIP,dstIp,srcPort,dstPort,numPackets,totalSize";
+  for (auto &elem : m_data) {
+    outputFile << "\n"
+               << elem.first << "," << elem.second.first << ","
+               << elem.second.second;
+  }
 }
 
 // csvPcapWriter private

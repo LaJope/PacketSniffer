@@ -1,7 +1,6 @@
 #include <iostream>
 #include <memory>
 
-#include <pcapplusplus/PcapLiveDevice.h>
 #include <pcapplusplus/PcapLiveDeviceList.h>
 #include <pcapplusplus/SystemUtils.h>
 

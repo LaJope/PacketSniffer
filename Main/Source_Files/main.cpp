@@ -1,11 +1,5 @@
 #include <memory>
 
-#include <pcapplusplus/EthLayer.h>
-#include <pcapplusplus/IPv4Layer.h>
-#include <pcapplusplus/Packet.h>
-#include <pcapplusplus/PcapLiveDevice.h>
-#include <pcapplusplus/PcapLiveDeviceList.h>
-
 #include "Application.h"
 #include "CsvWriter.h"
 #include "IReader.h"
