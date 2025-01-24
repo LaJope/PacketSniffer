@@ -10,6 +10,8 @@ public:
   virtual void Write(pcpp::RawPacket *rawPacket,
                      pcpp::PcapLiveDevice *dev = nullptr,
                      void *cookie = nullptr) = 0;
+
+  virtual void Flush() = 0;
 };
 
 } // namespace ps

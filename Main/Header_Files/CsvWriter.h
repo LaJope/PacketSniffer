@@ -8,17 +8,19 @@
 
 namespace ps {
 
-class csvPcapWriter : public IPacketWriter {
+class CsvWriter : public IPacketWriter {
 public:
-  csvPcapWriter(std::string);
+  CsvWriter(std::string = "PcapIPInfo");
 
   void Write(pcpp::RawPacket *, pcpp::PcapLiveDevice * = nullptr,
              void * = nullptr) override;
 
+  void Flush() override;
+
 private:
   std::map<std::string, std::pair<int, int>> m_data;
 
-  std::string m_outputFile;
+  std::string m_outputFileName;
 
 private:
   std::optional<std::string> getDataKey(const pcpp::Packet &) const;

@@ -6,7 +6,7 @@
 #include <pcapplusplus/SystemUtils.h>
 
 #include "IWriter.h"
-#include "networkReader.h"
+#include "NetworkReader.h"
 
 namespace ps {
 

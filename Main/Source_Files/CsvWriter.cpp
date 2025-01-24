@@ -1,19 +1,23 @@
 #include <iostream>
 #include <optional>
+#include <string>
 #include <utility>
 
 #include <pcapplusplus/IPv4Layer.h>
 #include <pcapplusplus/TcpLayer.h>
 #include <pcapplusplus/UdpLayer.h>
 
-#include "csvWriter.h"
+#include "CsvWriter.h"
 
 namespace ps {
 
 // csvPcapWriter public
 
-void csvPcapWriter::Write(pcpp::RawPacket *rawPacket,
-                          pcpp::PcapLiveDevice *device, void *cookie) {
+CsvWriter::CsvWriter(std::string outputFileName)
+    : m_outputFileName(outputFileName + ".csv") {}
+
+void CsvWriter::Write(pcpp::RawPacket *rawPacket, pcpp::PcapLiveDevice *device,
+                      void *cookie) {
 
   pcpp::Packet parsedPacket(rawPacket);
   if (!parsedPacket.isPacketOfType(pcpp::IPv4)) {
@@ -37,10 +41,14 @@ void csvPcapWriter::Write(pcpp::RawPacket *rawPacket,
                           std::pair<int, int>{1, packetSize});
 }
 
+void CsvWriter::Flush() {
+  std::cout << m_outputFileName << "\n" << m_data.size() << std::endl;
+}
+
 // csvPcapWriter private
 
 std::optional<std::string>
-csvPcapWriter::getDataKey(const pcpp::Packet &packet) const {
+CsvWriter::getDataKey(const pcpp::Packet &packet) const {
   std::string srcIPAddres, distIPAddres;
   std::string srcPort, distPort;
 
@@ -60,10 +68,14 @@ csvPcapWriter::getDataKey(const pcpp::Packet &packet) const {
     return std::nullopt;
   }
   if (tcpLayer != nullptr) {
-    srcPort = tcpLayer->getSrcPort();
-    distPort = tcpLayer->getDstPort();
+    srcPort = std::to_string(tcpLayer->getSrcPort());
+    distPort = std::to_string(tcpLayer->getDstPort());
+  } else {
+    srcPort = std::to_string(udpLayer->getSrcPort());
+    distPort = std::to_string(udpLayer->getDstPort());
   }
-  return srcIPAddres + "," + srcPort + "," + distIPAddres + "," + distPort;
+
+  return srcIPAddres + "," + distIPAddres + "," + srcPort + "," + distPort;
 }
 
 }; // namespace ps
