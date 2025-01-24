@@ -1,10 +1,10 @@
-#include <iostream>
 #include <memory>
 
 #include <pcapplusplus/PcapLiveDeviceList.h>
 #include <pcapplusplus/SystemUtils.h>
 
 #include "IWriter.h"
+#include "Logger.h"
 #include "NetworkReader.h"
 
 namespace ps {
@@ -26,17 +26,17 @@ void NetworkReader::Read(std::shared_ptr<IPacketWriter> writer) {
       m_deviceName);
 
   if (device == nullptr) {
-    std::cerr << "Cannot find suitable interface" << std::endl;
+    Logger::getInstance().error("Cannot find suitable interface");
     return;
   }
 
   if (!device->open()) {
-    std::cerr << "Cannot open device" << std::endl;
+    Logger::getInstance().error("Cannot open device " + m_deviceName);
     return;
   }
 
-  std::cout << "Starting packet capture on interface " << device->getName()
-            << "..." << std::endl;
+  Logger::getInstance().log("Starting packet capture on interface " +
+                            device->getName() + "...");
 
   device->startCapture(getNetworkCallback(writer), nullptr);
 
@@ -45,7 +45,7 @@ void NetworkReader::Read(std::shared_ptr<IPacketWriter> writer) {
   device->stopCapture();
   device->close();
 
-  std::cout << "Capture stopped." << std::endl;
+  Logger::getInstance().log("Capture stopped...");
 }
 
 void NetworkReader::setDeviceName(std::string device) { m_deviceName = device; }

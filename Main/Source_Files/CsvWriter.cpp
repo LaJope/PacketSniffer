@@ -1,5 +1,4 @@
 #include <fstream>
-#include <iostream>
 #include <optional>
 #include <string>
 #include <utility>
@@ -9,6 +8,7 @@
 #include <pcapplusplus/UdpLayer.h>
 
 #include "CsvWriter.h"
+#include "Logger.h"
 
 namespace ps {
 
@@ -22,7 +22,7 @@ void CsvWriter::Write(pcpp::RawPacket *rawPacket, pcpp::PcapLiveDevice *device,
 
   pcpp::Packet parsedPacket(rawPacket);
   if (!parsedPacket.isPacketOfType(pcpp::IPv4)) {
-    std::cerr << "Packet is not of IPv4 type" << std::endl;
+    Logger::getInstance().error("Packet is not of IPv4 type");
     return;
   }
 
@@ -63,7 +63,7 @@ CsvWriter::getDataKey(const pcpp::Packet &packet) const {
 
   auto *ipLayer = packet.getLayerOfType<pcpp::IPv4Layer>();
   if (ipLayer == nullptr) {
-    std::cerr << "Couldn't find IPv4 layer..." << std::endl;
+    Logger::getInstance().error("Couldn't find IPv4 layer...");
     return std::nullopt;
   }
 
@@ -73,7 +73,7 @@ CsvWriter::getDataKey(const pcpp::Packet &packet) const {
   auto *tcpLayer = packet.getLayerOfType<pcpp::TcpLayer>();
   auto *udpLayer = packet.getLayerOfType<pcpp::UdpLayer>();
   if (tcpLayer == nullptr && udpLayer == nullptr) {
-    std::cerr << "Couldn't find TCP nor UDP layers..." << std::endl;
+    Logger::getInstance().error("Couldn't find TCP nor UDP layers...");
     return std::nullopt;
   }
   if (tcpLayer != nullptr) {

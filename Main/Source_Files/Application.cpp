@@ -1,8 +1,8 @@
-#include <iostream>
 #include <memory>
 
 #include "Application.h"
 #include "IWriter.h"
+#include "Logger.h"
 
 // Application public
 
@@ -20,8 +20,8 @@ void Application::setReader(std::unique_ptr<ps::IPacketReader> reader) {
 
 int Application::start() {
   if (m_reader == nullptr || m_writer == nullptr) {
-    std::cerr << "Either Reader or Writer (or both) is not initialized for "
-                 "PacketSniffer. Aborting...";
+    Logger::getInstance().error("Either Reader or Writer (or both) is not "
+                                "initialized for PacketSniffer. Aborting...");
     return 1;
   }
   m_reader->Read(m_writer);

@@ -10,8 +10,8 @@ namespace ps {
 
 class NetworkReader : public IPacketReader {
 public:
-  NetworkReader(uint32_t = 60);
-  NetworkReader(std::string, uint32_t = 60);
+  NetworkReader(uint32_t);
+  NetworkReader(std::string, uint32_t);
 
   void Read(std::shared_ptr<IPacketWriter>) override;
 

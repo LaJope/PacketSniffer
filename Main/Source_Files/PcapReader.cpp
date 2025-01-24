@@ -1,9 +1,9 @@
-#include <iostream>
 #include <memory>
 
 #include <pcapplusplus/PcapFileDevice.h>
 
 #include "IWriter.h"
+#include "Logger.h"
 #include "PcapReader.h"
 
 namespace ps {
@@ -15,13 +15,13 @@ void PcapReader::Read(std::shared_ptr<IPacketWriter> writer) {
       pcpp::IFileReaderDevice::getReader(m_inputFileName));
 
   if (reader == nullptr) {
-    std::cerr << "Cannot determine reader for file type" << std::endl;
+    Logger::getInstance().error("Cannot determine reader for file type");
     return;
   }
 
   if (!reader->open()) {
-    std::cerr << "Cannot open " << m_inputFileName << " for reading"
-              << std::endl;
+    Logger::getInstance().error("Cannot open " + m_inputFileName +
+                                " for reading");
     return;
   }
 
