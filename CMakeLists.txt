@@ -19,6 +19,6 @@ ExternalProject_Add(
 add_subdirectory(Main)
 
 add_custom_target(${PROJECT_NAME} ALL)
-add_dependencies(${PROJECT_NAME} Main PcapPlusPlus)
-add_dependencies(Main PcapPlusPlus)
+add_dependencies(${PROJECT_NAME} pasn PcapPlusPlus)
+add_dependencies(pasn PcapPlusPlus)
 

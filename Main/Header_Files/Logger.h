@@ -11,6 +11,7 @@ public:
   static Logger &getInstance();
 
   void log(const std::string &message);
+  void warning(const std::string &message);
   void error(const std::string &message);
 
   void setVerbose(bool verbose);

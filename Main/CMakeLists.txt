@@ -1,6 +1,6 @@
-project(Main)
+project(pasn)
 
-set(SOURCE_FILES ./Source_Files/main.cpp ./Source_Files/NetworkReader.cpp ./Source_Files/AppSettings.cpp ./Source_Files/CsvWriter.cpp ./Source_Files/PcapReader.cpp ./Source_Files/Application.cpp)
+set(SOURCE_FILES ./Source_Files/main.cpp ./Source_Files/NetworkReader.cpp ./Source_Files/AppSettings.cpp ./Source_Files/CsvWriter.cpp ./Source_Files/Logger.cpp ./Source_Files/PcapReader.cpp ./Source_Files/Application.cpp)
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 

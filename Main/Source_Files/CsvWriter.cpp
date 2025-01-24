@@ -1,4 +1,5 @@
 #include <fstream>
+#include <mutex>
 #include <optional>
 #include <string>
 #include <utility>
@@ -22,7 +23,7 @@ void CsvWriter::Write(pcpp::RawPacket *rawPacket, pcpp::PcapLiveDevice *device,
 
   pcpp::Packet parsedPacket(rawPacket);
   if (!parsedPacket.isPacketOfType(pcpp::IPv4)) {
-    Logger::getInstance().error("Packet is not of IPv4 type");
+    Logger::getInstance().warning("Packet is not of IPv4 type");
     return;
   }
 
@@ -32,14 +33,15 @@ void CsvWriter::Write(pcpp::RawPacket *rawPacket, pcpp::PcapLiveDevice *device,
 
   int packetSize = parsedPacket.getRawPacket()->getFrameLength();
 
+  std::lock_guard<std::mutex> lock(m_lock);
+
   auto it = m_data.find(ipAndPort.value());
   if (it != m_data.end()) {
     it->second.first++;
     it->second.second += packetSize;
     return;
   }
-  m_data.insert_or_assign(ipAndPort.value(),
-                          std::pair<int, int>{1, packetSize});
+  m_data[ipAndPort.value()] = std::pair<int, int>{1, packetSize};
 }
 
 void CsvWriter::Flush() {
@@ -63,7 +65,7 @@ CsvWriter::getDataKey(const pcpp::Packet &packet) const {
 
   auto *ipLayer = packet.getLayerOfType<pcpp::IPv4Layer>();
   if (ipLayer == nullptr) {
-    Logger::getInstance().error("Couldn't find IPv4 layer...");
+    Logger::getInstance().warning("Couldn't find IPv4 layer...");
     return std::nullopt;
   }
 
@@ -73,7 +75,7 @@ CsvWriter::getDataKey(const pcpp::Packet &packet) const {
   auto *tcpLayer = packet.getLayerOfType<pcpp::TcpLayer>();
   auto *udpLayer = packet.getLayerOfType<pcpp::UdpLayer>();
   if (tcpLayer == nullptr && udpLayer == nullptr) {
-    Logger::getInstance().error("Couldn't find TCP nor UDP layers...");
+    Logger::getInstance().warning("Couldn't find TCP nor UDP layers...");
     return std::nullopt;
   }
   if (tcpLayer != nullptr) {

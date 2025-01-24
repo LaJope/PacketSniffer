@@ -2,5 +2,4 @@
 out/*
 pcapfiles/*
 compile_commands.json
-idead.md
 tasks.py

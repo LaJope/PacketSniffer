@@ -13,7 +13,7 @@ public:
   NetworkReader(uint32_t);
   NetworkReader(std::string, uint32_t);
 
-  void Read(std::shared_ptr<IPacketWriter>) override;
+  int Read(std::shared_ptr<IPacketWriter>) override;
 
   void setDeviceName(std::string);
   void setListeningTime(uint32_t);

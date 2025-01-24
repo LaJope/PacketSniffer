@@ -20,9 +20,7 @@ int main(int argc, char *argv[]) {
     std::cout << helpMessage << std::endl;
     return 0;
   }
-  if (settings.m_verbose) {
-    Logger::getInstance().setVerbose(true);
-  }
+  Logger::getInstance().setVerbose(settings.m_verbose);
 
   std::unique_ptr<ps::IPacketWriter> writer;
   std::unique_ptr<ps::IPacketReader> reader;

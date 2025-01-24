@@ -13,7 +13,7 @@ AppSettings::AppSettings(int argc, char *argv[]) {
     std::string opt = argv[i];
 
     if (opt[0] == '-' && opt.length() > 2 && opt[1] != '-') {
-      Logger::getInstance().error(
+      Logger::getInstance().warning(
           "Cannot combine multiple singular flags in one. Ignoring " + opt +
           " flag...");
       continue;
@@ -32,7 +32,7 @@ AppSettings::AppSettings(int argc, char *argv[]) {
       m_infile = argv[i];
 
     else
-      Logger::getInstance().error("Unrecognized command-line option " + opt +
+      Logger::getInstance().warning("Unrecognized command-line option " + opt +
                                   ". Ignoring...");
   }
 }
@@ -51,7 +51,7 @@ void AppSettings::setInfile(std::string fileName) {
     return;
   }
 
-  Logger::getInstance().error("Cannot read from file and listen to a device at "
+  Logger::getInstance().warning("Cannot read from file and listen to a device at "
                               "the same time. Ignoring file flag...");
 }
 
@@ -61,7 +61,7 @@ void AppSettings::setDevice(std::string deviceName) {
     return;
   }
 
-  Logger::getInstance().error("Cannot read from file and listen to a device at "
+  Logger::getInstance().warning("Cannot read from file and listen to a device at "
                               "the same time. Ignoring device flag...");
 }
 

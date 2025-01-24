@@ -24,7 +24,9 @@ int Application::start() {
                                 "initialized for PacketSniffer. Aborting...");
     return 1;
   }
-  m_reader->Read(m_writer);
+  if (m_reader->Read(m_writer))
+    return 1;
+
   m_writer->Flush();
   return 0;
 }

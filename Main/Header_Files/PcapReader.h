@@ -5,7 +5,7 @@ namespace ps {
 class PcapReader : public IPacketReader {
 public:
   PcapReader(std::string);
-  void Read(std::shared_ptr<IPacketWriter>) override;
+  int Read(std::shared_ptr<IPacketWriter>) override;
 
   void setInputFileName(std::string);
 
