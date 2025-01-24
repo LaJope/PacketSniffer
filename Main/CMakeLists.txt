@@ -2,6 +2,8 @@ project(pasn)
 
 set(SOURCE_FILES ./Source_Files/main.cpp ./Source_Files/NetworkReader.cpp ./Source_Files/AppSettings.cpp ./Source_Files/CsvWriter.cpp ./Source_Files/Logger.cpp ./Source_Files/PcapReader.cpp ./Source_Files/Application.cpp)
 
+find_package(Threads REQUIRED)
+
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -18,5 +20,5 @@ target_link_directories(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-  PRIVATE pcap Packet++ Pcap++ Common++
+  PRIVATE pcap Packet++ Pcap++ Common++ Threads::Threads
 )
