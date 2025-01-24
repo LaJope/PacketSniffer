@@ -1,10 +1,11 @@
 
 #include <memory>
 
-#include "WriterInterface.h"
+#include "IWriter.h"
+
 namespace ps {
 
-void PcapFileSniffer(std::unique_ptr<IPCAPWriter> writer,
+void PcapFileSniffer(std::unique_ptr<IPacketWriter> writer,
                      std::string &filename) {
   int a;
   return;

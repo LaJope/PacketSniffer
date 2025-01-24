@@ -1,11 +1,11 @@
 #pragma once
 
-#include "pcapplusplus/PcapLiveDevice.h"
-#include "pcapplusplus/RawPacket.h"
+#include <pcapplusplus/PcapLiveDevice.h>
+#include <pcapplusplus/RawPacket.h>
 
 namespace ps {
 
-class IPCAPWriter {
+class IPacketWriter {
 public:
   virtual void Write(pcpp::RawPacket *rawPacket,
                      pcpp::PcapLiveDevice *dev = nullptr,

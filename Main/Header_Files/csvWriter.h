@@ -1,18 +1,27 @@
 #pragma once
 
-#include <iostream>
+#include <map>
+#include <optional>
+#include <utility>
 
-#include "WriterInterface.h"
+#include "IWriter.h"
 
 namespace ps {
 
-class csvPcapWriter : public IPCAPWriter {
-
+class csvPcapWriter : public IPacketWriter {
 public:
-  void Write(pcpp::RawPacket *rawPacket, pcpp::PcapLiveDevice *dev = nullptr,
-             void *cookie = nullptr) override {
-    std::cout << "Hello" << std::endl;
-  }
+  csvPcapWriter(std::string);
+
+  void Write(pcpp::RawPacket *, pcpp::PcapLiveDevice * = nullptr,
+             void * = nullptr) override;
+
+private:
+  std::map<std::string, std::pair<int, int>> m_data;
+
+  std::string m_outputFile;
+
+private:
+  std::optional<std::string> getDataKey(const pcpp::Packet &) const;
 };
 
 } // namespace ps

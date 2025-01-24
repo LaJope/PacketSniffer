@@ -1,6 +1,6 @@
 project(Main)
 
-set(SOURCE_FILES ./Source_Files/main.cpp ./Source_Files/netInterfaceListener.cpp ./Source_Files/main.cpp.bak ./Source_Files/test.cpp ./Source_Files/PcapFileSniffer.cpp ./Source_Files/Application.cpp)
+set(SOURCE_FILES ./Source_Files/main.cpp ./Source_Files/netInterfaceListener.cpp ./Source_Files/main.cpp.bak ./Source_Files/PcapFileSniffer.cpp ./Source_Files/csvPcapWriter.cpp ./Source_Files/Application.cpp)
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
