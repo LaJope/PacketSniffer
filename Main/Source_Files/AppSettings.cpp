@@ -1,6 +1,6 @@
 #include <functional>
-#include <stdexcept>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 
@@ -14,27 +14,32 @@ AppSettings::AppSettings(int argc, char *argv[]) {
     std::string opt = argv[i];
 
     if (opt[0] == '-' && opt.length() > 2 && opt[1] != '-') {
-      Logger::getInstance().warning(
+      Logger::getInstance().error(
           "Cannot combine multiple singular flags in one. Ignoring " + opt +
           " flag...");
       continue;
     }
 
-    if (auto j = NoArgs.find(opt); j != NoArgs.end())
+    if (auto j = NoArgs.find(opt); j != NoArgs.end()) {
       j->second();
+      continue;
+    }
 
-    else if (auto k = OneArgs.find(opt); k != OneArgs.end())
+    if (auto k = OneArgs.find(opt); k != OneArgs.end()) {
       if (++i < argc)
         k->second(argv[i]);
       else
         throw std::runtime_error{"Missing param after " + opt};
+      continue;
+    }
 
-    else if (!m_infile)
+    if (!m_infile) {
       m_infile = argv[i];
+      continue;
+    }
 
-    else
-      Logger::getInstance().warning("Unrecognized command-line option " + opt +
-                                  ". Ignoring...");
+    Logger::getInstance().error("Unrecognized command-line option " + opt +
+                                ". Ignoring...");
   }
 }
 
@@ -52,7 +57,7 @@ void AppSettings::setInfile(std::string fileName) {
     return;
   }
 
-  Logger::getInstance().warning("Cannot read from file and listen to a device at "
+  Logger::getInstance().error("Cannot read from file and listen to a device at "
                               "the same time. Ignoring file flag...");
 }
 
@@ -62,7 +67,7 @@ void AppSettings::setDevice(std::string deviceName) {
     return;
   }
 
-  Logger::getInstance().warning("Cannot read from file and listen to a device at "
+  Logger::getInstance().error("Cannot read from file and listen to a device at "
                               "the same time. Ignoring device flag...");
 }
 

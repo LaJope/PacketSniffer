@@ -23,7 +23,7 @@ private:
 
   std::string m_outputFileName;
 
-  std::mutex m_lock;
+  std::mutex m_dataAccessLock;
 
 
 private:

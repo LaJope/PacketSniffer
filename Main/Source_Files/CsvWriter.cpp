@@ -33,15 +33,17 @@ void CsvWriter::Write(pcpp::RawPacket *rawPacket, pcpp::PcapLiveDevice *device,
 
   int packetSize = parsedPacket.getRawPacket()->getFrameLength();
 
-  std::lock_guard<std::mutex> lock(m_lock);
+  {
+    std::lock_guard<std::mutex> lock(m_dataAccessLock);
 
-  auto it = m_data.find(ipAndPort.value());
-  if (it != m_data.end()) {
-    it->second.first++;
-    it->second.second += packetSize;
-    return;
+    auto it = m_data.find(ipAndPort.value());
+    if (it != m_data.end()) {
+      it->second.first++;
+      it->second.second += packetSize;
+      return;
+    }
+    m_data[ipAndPort.value()] = std::pair<int, int>{1, packetSize};
   }
-  m_data[ipAndPort.value()] = std::pair<int, int>{1, packetSize};
 }
 
 void CsvWriter::Flush() {
