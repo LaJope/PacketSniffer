@@ -5,6 +5,8 @@
 #include <utility>
 
 #include <pcapplusplus/IPv4Layer.h>
+#include <pcapplusplus/Layer.h>
+#include <pcapplusplus/Packet.h>
 #include <pcapplusplus/TcpLayer.h>
 #include <pcapplusplus/UdpLayer.h>
 
@@ -20,7 +22,6 @@ CsvWriter::CsvWriter(std::string outputFileName)
 
 void CsvWriter::Write(pcpp::RawPacket *rawPacket, pcpp::PcapLiveDevice *device,
                       void *cookie) {
-
   pcpp::Packet parsedPacket(rawPacket);
   if (!parsedPacket.isPacketOfType(pcpp::IPv4)) {
     Logger::getInstance().warning("Packet is not of IPv4 type");

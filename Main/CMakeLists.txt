@@ -1,6 +1,6 @@
 project(pasn)
 
-set(SOURCE_FILES ./Source_Files/main.cpp ./Source_Files/NetworkReader.cpp ./Source_Files/AppSettings.cpp ./Source_Files/CsvWriter.cpp ./Source_Files/Logger.cpp ./Source_Files/PcapReader.cpp ./Source_Files/Application.cpp)
+file(GLOB SOURCE_FILES "./Source_Files/*.cpp")
 
 find_package(Threads REQUIRED)
 
@@ -12,11 +12,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 target_include_directories(${PROJECT_NAME}
   PRIVATE ./Header_Files/
-  ${CMAKE_BINARY_DIR}/PcapPlusPlus-install/include
-)
-
-target_link_directories(${PROJECT_NAME}
-  PRIVATE ${CMAKE_BINARY_DIR}/PcapPlusPlus-install/lib
 )
 
 target_link_libraries(${PROJECT_NAME}

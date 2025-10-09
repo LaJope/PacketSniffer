@@ -3,3 +3,4 @@ out/*
 pcapfiles/*
 compile_commands.json
 tasks.py
+*/pasn.csv
