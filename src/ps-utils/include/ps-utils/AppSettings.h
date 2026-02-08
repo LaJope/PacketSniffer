@@ -6,6 +6,8 @@
 #include <string>
 #include <unordered_map>
 
+#include "Logger.h"
+
 class AppSettings {
 public:
   bool m_help = false;
@@ -48,10 +50,32 @@ private:
   };
 
 private:
-  void setHelpToTrue();
-  void setVerboseToTrue();
-  void setOutfile(std::string fileName);
-  void setInfile(std::string fileName);
-  void setDevice(std::string deviceName);
-  void setTime(std::string time);
+  inline void setHelpToTrue() { m_help = true; }
+  inline void setVerboseToTrue() { m_verbose = true; }
+  inline void setTime(std::string time) { m_time = std::stoul(time); }
+
+  inline void setOutfile(std::string fileName) {
+    m_outfile = fileName.substr(0, fileName.find("."));
+  }
+  inline void setInfile(std::string fileName) {
+    if (!m_deviceName) {
+      m_infile = fileName;
+      return;
+    }
+
+    Logger::getInstance().error(
+        "Cannot read from file and listen to a device at "
+        "the same time. Ignoring file flag...");
+  }
+
+  inline void setDevice(std::string deviceName) {
+    if (!m_infile) {
+      m_deviceName = deviceName;
+      return;
+    }
+
+    Logger::getInstance().error(
+        "Cannot read from file and listen to a device at "
+        "the same time. Ignoring device flag...");
+  }
 };

@@ -1,13 +1,12 @@
+#include "AppSettings.h"
+
 #include <functional>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
 
-#include "AppSettings.h"
 #include "Logger.h"
-
-// AppSettings public
 
 AppSettings::AppSettings(int argc, char *argv[]) {
   for (int i = 1; i < argc; i++) {
@@ -42,33 +41,3 @@ AppSettings::AppSettings(int argc, char *argv[]) {
                                 ". Ignoring...");
   }
 }
-
-// AppSettings private
-
-void AppSettings::setHelpToTrue() { m_help = true; }
-void AppSettings::setVerboseToTrue() { m_verbose = true; }
-void AppSettings::setOutfile(std::string fileName) {
-  m_outfile = fileName.substr(0, fileName.find("."));
-}
-
-void AppSettings::setInfile(std::string fileName) {
-  if (!m_deviceName) {
-    m_infile = fileName;
-    return;
-  }
-
-  Logger::getInstance().error("Cannot read from file and listen to a device at "
-                              "the same time. Ignoring file flag...");
-}
-
-void AppSettings::setDevice(std::string deviceName) {
-  if (!m_infile) {
-    m_deviceName = deviceName;
-    return;
-  }
-
-  Logger::getInstance().error("Cannot read from file and listen to a device at "
-                              "the same time. Ignoring device flag...");
-}
-
-void AppSettings::setTime(std::string time) { m_time = std::stoul(time); }

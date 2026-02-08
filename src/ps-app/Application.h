@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "IReader.h"
-#include "IWriter.h"
+#include <ps-io/IReader.h>
+#include <ps-io/IWriter.h>
 
 class Application {
 public:

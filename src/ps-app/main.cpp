@@ -1,16 +1,18 @@
 #include <iostream>
 #include <memory>
 
-#include "AppSettings.h"
 #include "Application.h"
-#include "CsvWriter.h"
-#include "IReader.h"
-#include "IWriter.h"
-#include "Logger.h"
-#include "NetworkReader.h"
-#include "PcapReader.h"
 
-#include "HelpMessage.h"
+#include <ps-io/CsvWriter.h>
+#include <ps-io/IReader.h>
+#include <ps-io/IWriter.h>
+#include <ps-io/NetworkReader.h>
+#include <ps-io/PcapReader.h>
+
+#include <ps-utils/AppSettings.h>
+#include <ps-utils/Logger.h>
+
+#include <ps-utils/HelpMessage.h>
 
 int main(int argc, char *argv[]) {
 

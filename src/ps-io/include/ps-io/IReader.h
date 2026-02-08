@@ -8,7 +8,9 @@ namespace ps {
 
 class IPacketReader {
 public:
-  virtual int Read(std::shared_ptr<IPacketWriter> writer) = 0;
+  using Ptr = std::shared_ptr<IPacketReader>;
+
+  virtual int Read(IPacketWriter::Ptr writer) = 0;
 };
 
 } // namespace ps
