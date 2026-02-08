@@ -32,7 +32,10 @@ if (NOT PCAP_LIBRARY OR NOT PCAP_INCLUDE_DIR)
                         "or your prefered package manager")
 endif()
 
-add_subdirectory(Main)
+add_subdirectory(src/ps-database)
+add_subdirectory(src/ps-io)
+add_subdirectory(src/ps-utils)
+add_subdirectory(src/ps-app)
 
 add_custom_target(${PROJECT_NAME} ALL)
 add_dependencies(${PROJECT_NAME} pasn)

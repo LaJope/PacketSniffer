@@ -2,7 +2,7 @@
 
 #include "Application.h"
 #include "IWriter.h"
-#include "Logger.h"
+// #include "Logger.h"
 
 // Application public
 
