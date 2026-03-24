@@ -3,64 +3,65 @@
 #include <pcapplusplus/PcapLiveDeviceList.h>
 #include <pcapplusplus/SystemUtils.h>
 
+#include <ps-utils/Logger.h>
+
 #include "IWriter.h"
-#include "Logger.h"
 #include "NetworkReader.h"
 
-namespace ps {
+namespace ps
+{
 
 // NetworkReader public
 
 NetworkReader::NetworkReader(uint32_t time)
-    : m_deviceName(pcpp::PcapLiveDeviceList::getInstance()
-                       .getPcapLiveDevicesList()[0]
-                       ->getName()),
-      m_listeningTime(time) {}
+    : m_deviceName(pcpp::PcapLiveDeviceList::getInstance().getPcapLiveDevicesList()[0]->getName())
+    , m_listeningTime(time)
+{}
 NetworkReader::NetworkReader(std::string device, uint32_t time)
-    : m_deviceName(device), m_listeningTime(time) {}
+    : m_deviceName(device)
+    , m_listeningTime(time)
+{}
 
-int NetworkReader::Read(std::shared_ptr<IPacketWriter> writer) {
-  pcpp::PcapLiveDevice *device;
+int NetworkReader::Read(std::shared_ptr<IPacketWriter> writer)
+{
+    pcpp::PcapLiveDevice* device;
 
-  device =
-      pcpp::PcapLiveDeviceList::getInstance().getDeviceByName(m_deviceName);
+    device = pcpp::PcapLiveDeviceList::getInstance().getDeviceByName(m_deviceName);
 
-  if (device == nullptr) {
-    Logger::getInstance().error("Cannot find suitable interface");
-    return 1;
-  }
+    if (device == nullptr)
+    {
+        LOG_ERROR("Cannot find suitable interface");
+        return 1;
+    }
 
-  if (!device->open()) {
-    Logger::getInstance().error("Cannot open device " + m_deviceName);
-    return 1;
-  }
+    if (!device->open())
+    {
+        LOG_ERROR("Cannot open device '{}'", m_deviceName);
+        return 1;
+    }
 
-  Logger::getInstance().log("Starting packet capture on interface " +
-                            device->getName() + "...");
+    LOG_INFO("Starting packet capture on interface '{}'...", device->getName());
 
-  device->startCapture(getNetworkCallback(writer), nullptr);
+    device->startCapture(getNetworkCallback(writer), nullptr);
 
-  std::this_thread::sleep_for(std::chrono::seconds(m_listeningTime));
-  device->stopCapture();
-  device->close();
+    std::this_thread::sleep_for(std::chrono::seconds(m_listeningTime));
+    device->stopCapture();
+    device->close();
 
-  Logger::getInstance().log("Capture stopped...");
+    LOG_INFO("Capture stopped...");
 
-  return 0;
+    return 0;
 }
-
-void NetworkReader::setDeviceName(std::string device) { m_deviceName = device; }
-void NetworkReader::setListeningTime(uint32_t time) { m_listeningTime = time; }
 
 // NetworkReader private
 
-std::function<void(pcpp::RawPacket *, pcpp::PcapLiveDevice *, void *)>
-NetworkReader::getNetworkCallback(std::shared_ptr<IPacketWriter> writer) {
-  return
-      [&](pcpp::RawPacket *rawPacket, pcpp::PcapLiveDevice *dev, void *cookie) {
-        Logger::getInstance().log("Captured a package...");
+std::function<void(pcpp::RawPacket*, pcpp::PcapLiveDevice*, void*)> NetworkReader::getNetworkCallback(std::shared_ptr<IPacketWriter> writer)
+{
+    return [&](pcpp::RawPacket* rawPacket, pcpp::PcapLiveDevice* dev, void* cookie)
+    {
+        LOG_INFO("Captured a package...");
         writer->Write(rawPacket, dev, cookie);
-      };
+    };
 }
 
 } // namespace ps

@@ -1,8 +1,6 @@
 #include <iostream>
 #include <memory>
 
-#include "Application.h"
-
 #include <ps-io/CsvWriter.h>
 #include <ps-io/IReader.h>
 #include <ps-io/IWriter.h>
@@ -10,35 +8,36 @@
 #include <ps-io/PcapReader.h>
 
 #include <ps-utils/AppSettings.h>
+#include <ps-utils/HelpMessage.h>
 #include <ps-utils/Logger.h>
 
-#include <ps-utils/HelpMessage.h>
+#include "Application.h"
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[])
+{
+    AppSettings settings(argc, argv);
 
-  AppSettings settings(argc, argv);
+    if (settings.m_help)
+    {
+        std::cout << helpMessage << std::endl;
+        return 0;
+    }
 
-  if (settings.m_help) {
-    std::cout << helpMessage << std::endl;
+    Logger::getInstance().setVerbose(settings.m_verbose);
+
+    std::unique_ptr<ps::IPacketWriter> writer;
+    std::unique_ptr<ps::IPacketReader> reader;
+
+    if (settings.m_infile)
+        reader = std::make_unique<ps::PcapReader>(settings.m_infile.value());
+    else if (settings.m_deviceName)
+        reader = std::make_unique<ps::NetworkReader>(settings.m_deviceName.value(), settings.m_time);
+    else
+        reader = std::make_unique<ps::NetworkReader>(settings.m_time);
+
+    writer = std::make_unique<ps::CsvWriter>(settings.m_outfile);
+    Application app(std::move(reader), std::move(writer));
+    app.start();
+
     return 0;
-  }
-  Logger::getInstance().setVerbose(settings.m_verbose);
-
-  std::unique_ptr<ps::IPacketWriter> writer;
-  std::unique_ptr<ps::IPacketReader> reader;
-
-  if (settings.m_infile) {
-    reader = std::make_unique<ps::PcapReader>(settings.m_infile.value());
-  } else if (settings.m_deviceName) {
-    reader = std::make_unique<ps::NetworkReader>(settings.m_deviceName.value(),
-                                                 settings.m_time);
-  } else {
-    reader = std::make_unique<ps::NetworkReader>(settings.m_time);
-  }
-
-  writer = std::make_unique<ps::CsvWriter>(settings.m_outfile);
-  Application app(std::move(reader), std::move(writer));
-  app.start();
-
-  return 0;
 }

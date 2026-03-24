@@ -1,4 +1,4 @@
-const char *helpMessage = R""""(
+const char* helpMessage = R""""(
 usage: pasn [-h | --help] [-i | --infile <filename>] [-o | --outfile <filename>]
             [-d | --device <deviceName>] [-t | --time <time>]
 

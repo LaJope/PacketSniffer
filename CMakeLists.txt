@@ -4,7 +4,7 @@ project(DeepPacket)
 
 set(CMAKE_BUILD_PARALLEL_LEVEL 16)
 
-set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD 23)
 
 find_program(FLEX_EXECUTABLE flex)
 if (NOT FLEX_EXECUTABLE)

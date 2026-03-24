@@ -1,47 +1,52 @@
 #include <memory>
 
 #include <pcapplusplus/PcapFileDevice.h>
+#include <ps-utils/Logger.h>
 
 #include "IWriter.h"
-#include "Logger.h"
 #include "PcapReader.h"
 
-namespace ps {
+namespace ps
+{
 
-PcapReader::PcapReader(std::string filename) : m_inputFileName(filename) {}
+PcapReader::PcapReader(std::string filename)
+    : m_inputFileName(filename)
+{}
 
-int PcapReader::Read(std::shared_ptr<IPacketWriter> writer) {
-  std::unique_ptr<pcpp::IFileReaderDevice> reader(
-      pcpp::IFileReaderDevice::getReader(m_inputFileName));
+int PcapReader::Read(std::shared_ptr<IPacketWriter> writer)
+{
+    auto fileReader(pcpp::IFileReaderDevice::getReader(m_inputFileName));
 
-  if (reader == nullptr) {
-    Logger::getInstance().error("Cannot determine reader for file type");
-    return 1;
-  }
+    if (!fileReader)
+    {
+        LOG_ERROR("Cannot determine reader for file type");
+        return 1;
+    }
 
-  if (!reader->open()) {
-    Logger::getInstance().error("Cannot open " + m_inputFileName +
-                                " for reading");
-    return 1;
-  }
+    if (!fileReader->open())
+    {
+        LOG_ERROR("Cannot open '{}' for reading", m_inputFileName);
+        return 1;
+    }
 
-  Logger::getInstance().log("Starting parsing packets from file " +
-                            m_inputFileName + "...");
+    LOG_INFO("Starting parsing packets from file '{}'...", m_inputFileName);
 
-  pcpp::RawPacket rawPacket;
-  while (reader->getNextPacket(rawPacket)) {
-    writer->Write(&rawPacket);
-  }
+    pcpp::RawPacket rawPacket;
+    while (fileReader->getNextPacket(rawPacket))
+    {
+        writer->Write(&rawPacket);
+    }
 
-  Logger::getInstance().log("Parsing stopped...");
+    LOG_INFO("Parsing stopped...");
 
-  reader->close();
+    fileReader->close();
 
-  return 0;
+    return 0;
 }
 
-void PcapReader::setInputFileName(std::string fileName) {
-  m_inputFileName = fileName;
+void PcapReader::setInputFileName(std::string fileName)
+{
+    m_inputFileName = fileName;
 }
 
 } // namespace ps
