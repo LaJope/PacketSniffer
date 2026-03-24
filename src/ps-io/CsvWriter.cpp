@@ -10,8 +10,9 @@
 #include <pcapplusplus/TcpLayer.h>
 #include <pcapplusplus/UdpLayer.h>
 
+#include <ps-utils/Logger.h>
+
 #include "CsvWriter.h"
-#include "Logger.h"
 
 namespace ps {
 

@@ -4,3 +4,4 @@ Language: Cpp
 DerivePointerAlignment: false
 PointerAlignment: Left
 ColumnLimit: 140
+BreakInheritanceList: BILS_BeforeComma
