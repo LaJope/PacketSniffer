@@ -29,7 +29,7 @@ void CsvWriter::Write(pcpp::RawPacket *rawPacket, pcpp::PcapLiveDevice *device,
     return;
   }
 
-  std::optional<std::string> ipAndPort = getDataKey(parsedPacket);
+  std::optional<CollectData> ipAndPort = getDataKey(parsedPacket);
   if (!ipAndPort)
     return;
 
@@ -54,27 +54,30 @@ void CsvWriter::Flush() {
 
   outputFile << "srcIP,dstIP,srcPort,dstPort,numPackets,totalSize";
   for (auto &elem : m_data) {
+    const auto &srcIP = elem.first.srcIP.toInt();
+    const auto &dstIP = elem.first.dstIP.toInt();
+    const auto &srcPort = elem.first.srcPort;
+    const auto &dstPort = elem.first.dstPort;
     outputFile << "\n"
-               << elem.first << "," << elem.second.first << ","
-               << elem.second.second;
+               << srcIP << "," << dstIP << "," << srcPort << "," << dstPort
+               << "," << elem.second.first << "," << elem.second.second;
   }
 }
 
 // csvPcapWriter private
 
-std::optional<std::string>
+std::optional<CollectData>
 CsvWriter::getDataKey(const pcpp::Packet &packet) const {
-  std::string srcIPAddres, distIPAddres;
-  std::string srcPort, distPort;
+  pcpp::IPv4Address srcIP, dstIP;
+  uint16_t srcPort, dstPort;
 
   auto *ipLayer = packet.getLayerOfType<pcpp::IPv4Layer>();
   if (ipLayer == nullptr) {
     Logger::getInstance().warning("Couldn't find IPv4 layer...");
     return std::nullopt;
   }
-
-  srcIPAddres = ipLayer->getSrcIPv4Address().toString();
-  distIPAddres = ipLayer->getDstIPv4Address().toString();
+  srcIP = ipLayer->getSrcIPv4Address();
+  dstIP = ipLayer->getDstIPv4Address();
 
   auto *tcpLayer = packet.getLayerOfType<pcpp::TcpLayer>();
   auto *udpLayer = packet.getLayerOfType<pcpp::UdpLayer>();
@@ -83,14 +86,16 @@ CsvWriter::getDataKey(const pcpp::Packet &packet) const {
     return std::nullopt;
   }
   if (tcpLayer != nullptr) {
-    srcPort = std::to_string(tcpLayer->getSrcPort());
-    distPort = std::to_string(tcpLayer->getDstPort());
+    srcPort = tcpLayer->getSrcPort();
+    dstPort = tcpLayer->getDstPort();
   } else {
-    srcPort = std::to_string(udpLayer->getSrcPort());
-    distPort = std::to_string(udpLayer->getDstPort());
+    srcPort = udpLayer->getSrcPort();
+    dstPort = udpLayer->getDstPort();
   }
 
-  return srcIPAddres + "," + distIPAddres + "," + srcPort + "," + distPort;
+  CollectData result{srcIP, dstIP, srcPort, dstPort};
+
+  return result;
 }
 
 }; // namespace ps
