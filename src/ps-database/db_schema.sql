@@ -1,80 +1,86 @@
--- Network Packet Database Schema
+-- 
+-- Посмотреть, что быстрее CONSTRAINT или пользовательский класс ENUM
+-- Сделать ON UPDATE RESTRICT
+-- Добавить первичные/вторичные ключи в таблицы (первичный -> вторичный, +первичный)
+-- 
 
--- 1. Core Packet Table
+-- TABLES
+
 CREATE TABLE packets (
-    id BIGSERIAL PRIMARY KEY,
+    packet_id BIGSERIAL PRIMARY KEY,
     timestamp TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    source_ip INET NOT NULL,
-    destination_ip INET NOT NULL,
-    source_port SMALLINT,
-    destination_port SMALLINT,
     protocol VARCHAR(10) NOT NULL,
-    packet_length INTEGER NOT NULL,
     payload BYTEA,
     capture_interface VARCHAR(50),
+    packet_length INTEGER NOT NULL,
     vlan_id SMALLINT,
 
-    -- Constraints
-    CONSTRAINT chk_source_port CHECK (source_port >= 0 AND source_port <= 65535),
-    CONSTRAINT chk_destination_port CHECK (destination_port >= 0 AND destination_port <= 65535),
     CONSTRAINT chk_packet_length CHECK (packet_length > 0),
     CONSTRAINT chk_protocol CHECK (protocol IN ('TCP', 'UDP', 'ICMP', 'ARP', 'OTHER'))
 );
 
--- 2. IP Layer Information Table
 CREATE TABLE ip_packets (
-    packet_id BIGINT PRIMARY KEY REFERENCES packets(id) ON DELETE CASCADE,
+    packet_id BIGINT PRIMARY KEY REFERENCES packets(packet_id) ON DELETE CASCADE,
     version SMALLINT NOT NULL,
     header_length SMALLINT NOT NULL,
     type_of_service SMALLINT,
+    source_ip INET NOT NULL,
+    destination_ip INET NOT NULL,
     total_length INTEGER NOT NULL,
     identification INTEGER,
-    flags SMALLINT,
+    flags SMALLINT NOT NULL,
     fragment_offset SMALLINT,
-    ttl SMALLINT NOT NULL,
+    ttl INTEGER NOT NULL,
     checksum INTEGER,
 
-    -- Constraints
     CONSTRAINT chk_version CHECK (version IN (4, 6)),
     CONSTRAINT chk_ttl CHECK (ttl > 0)
 );
 
--- 3. TCP Layer Information Table
 CREATE TABLE tcp_packets (
-    packet_id BIGINT PRIMARY KEY REFERENCES packets(id) ON DELETE CASCADE,
-    sequence_number INTEGER NOT NULL,
-    acknowledgment_number INTEGER,
-    header_length SMALLINT NOT NULL,
-    flags SMALLINT NOT NULL,
-    window_size SMALLINT NOT NULL,
+    packet_id BIGINT PRIMARY KEY REFERENCES packets(packet_id) ON DELETE CASCADE,
+    sequence_number BIGINT NOT NULL,
+    acknowledgment_number BIGINT,
+    source_port INTEGER NOT NULL,
+    destination_port INTEGER NOT NULL,
+    header_length INTEGER NOT NULL,
+    fin_flag SMALLINT,
+    syn_flag SMALLINT,
+    rst_flag SMALLINT,
+    psh_flag SMALLINT,
+    ack_flag SMALLINT,
+    urg_flag SMALLINT,
+    ece_flag SMALLINT,
+    cwr_flag SMALLINT,
+    window_size INTEGER NOT NULL,
     checksum INTEGER,
     urgent_pointer SMALLINT,
 
-    -- Constraints
-    CONSTRAINT chk_flags CHECK (flags >= 0 AND flags <= 255)
+    CONSTRAINT chk_source_port CHECK (source_port >= 0 AND source_port <= 65535),
+    CONSTRAINT chk_destination_port CHECK (destination_port >= 0 AND destination_port <= 65535)
 );
 
--- 4. UDP Layer Information Table
 CREATE TABLE udp_packets (
-    packet_id BIGINT PRIMARY KEY REFERENCES packets(id) ON DELETE CASCADE,
-    length SMALLINT NOT NULL,
+    packet_id BIGINT PRIMARY KEY REFERENCES packets(packet_id) ON DELETE CASCADE,
+    length INTEGER NOT NULL,
+    source_port INTEGER NOT NULL,
+    destination_port INTEGER NOT NULL,
     checksum INTEGER
+
+    CONSTRAINT chk_source_port CHECK (source_port >= 0 AND source_port <= 65535),
+    CONSTRAINT chk_destination_port CHECK (destination_port >= 0 AND destination_port <= 65535)
 );
 
--- 5. ICMP Layer Information Table
 CREATE TABLE icmp_packets (
-    packet_id BIGINT PRIMARY KEY REFERENCES packets(id) ON DELETE CASCADE,
+    packet_id BIGINT PRIMARY KEY REFERENCES packets(packet_id) ON DELETE CASCADE,
     type SMALLINT NOT NULL,
     code SMALLINT NOT NULL,
     checksum INTEGER,
-    -- Additional ICMP-specific fields can be added as needed
-    -- For example, echo request/reply data, etc.
     icmp_data BYTEA
 );
 
--- 6. ARP Layer Information Table
 CREATE TABLE arp_packets (
-    packet_id BIGINT PRIMARY KEY REFERENCES packets(id) ON DELETE CASCADE,
+    packet_id BIGINT PRIMARY KEY REFERENCES packets(packet_id) ON DELETE CASCADE,
     hardware_type SMALLINT NOT NULL,
     protocol_type SMALLINT NOT NULL,
     hardware_length SMALLINT NOT NULL,
@@ -86,21 +92,19 @@ CREATE TABLE arp_packets (
     target_protocol_address INET
 );
 
--- 7. Packet Statistics View
-CREATE VIEW packet_statistics AS
+-- VIEWS
+
+CREATE OR REPLACE VIEW packet_statistics AS
 SELECT
     protocol,
     COUNT(*) as packet_count,
     MIN(timestamp) as first_seen,
     MAX(timestamp) as last_seen,
-    COUNT(DISTINCT source_ip) as unique_sources,
-    COUNT(DISTINCT destination_ip) as unique_destinations,
     SUM(packet_length) as total_bytes
 FROM packets
 GROUP BY protocol;
 
--- 8. Daily Packet Count View
-CREATE VIEW daily_packet_counts AS
+CREATE OR REPLACE VIEW daily_packet_counts AS
 SELECT
     DATE(timestamp) as date,
     protocol,
@@ -110,34 +114,82 @@ FROM packets
 GROUP BY DATE(timestamp), protocol
 ORDER BY date DESC;
 
--- 9. Top Talkers View
-CREATE VIEW top_talkers AS
+CREATE OR REPLACE VIEW top_talkers AS
 SELECT
-    source_ip,
-    destination_ip,
-    protocol,
+    ip.source_ip,
+    ip.destination_ip,
+    p.protocol,
     COUNT(*) as packet_count,
-    SUM(packet_length) as total_bytes,
-    MIN(timestamp) as first_seen,
-    MAX(timestamp) as last_seen
-FROM packets
-GROUP BY source_ip, destination_ip, protocol
+    SUM(p.packet_length) as total_bytes,
+    MIN(p.timestamp) as first_seen,
+    MAX(p.timestamp) as last_seen
+FROM packets p
+JOIN ip_packets ip ON p.packet_id = ip.packet_id
+GROUP BY ip.source_ip, ip.destination_ip, p.protocol
 ORDER BY packet_count DESC
 LIMIT 100;
 
--- 10. Indexes for Performance
-CREATE INDEX idx_packets_timestamp ON packets(timestamp);
-CREATE INDEX idx_packets_source_ip ON packets(source_ip);
-CREATE INDEX idx_packets_destination_ip ON packets(destination_ip);
-CREATE INDEX idx_packets_protocol ON packets(protocol);
-CREATE INDEX idx_packets_source_port ON packets(source_port);
-CREATE INDEX idx_packets_destination_port ON packets(destination_port);
-CREATE INDEX idx_packets_length ON packets(packet_length);
-CREATE INDEX idx_packets_capture_interface ON packets(capture_interface);
+CREATE OR REPLACE VIEW top_source_ips_24h AS
+SELECT
+    ip.source_ip,
+    COUNT(*) AS packet_count,
+    SUM(p.packet_length) AS total_bytes,
+    MIN(p.timestamp) AS first_packet,
+    MAX(p.timestamp) AS last_packet,
+    AVG(p.packet_length) AS avg_packet_size
+FROM packets p
+JOIN ip_packets ip ON p.packet_id = ip.packet_id
+WHERE p.timestamp >= NOW() - INTERVAL '24 hours'
+GROUP BY ip.source_ip
+ORDER BY packet_count DESC
+LIMIT 10;
 
--- 11. Functions for Data Management
+CREATE OR REPLACE VIEW port_activity AS
+WITH tcp_ports AS (
+    SELECT
+        tp.destination_port AS port,
+        'TCP' AS protocol,
+        COUNT(*) AS connection_attempts,
+        SUM(p.packet_length) AS total_bytes
+    FROM tcp_packets tp
+    JOIN packets p ON tp.packet_id = p.packet_id
+    GROUP BY tp.destination_port
+),
+udp_ports AS (
+    SELECT
+        up.destination_port AS port,
+        'UDP' AS protocol,
+        COUNT(*) AS connection_attempts,
+        SUM(p.packet_length) AS total_bytes
+    FROM udp_packets up
+    JOIN packets p ON up.packet_id = p.packet_id
+    GROUP BY up.destination_port
+)
+SELECT * FROM tcp_ports
+UNION ALL
+SELECT * FROM udp_ports
+ORDER BY total_bytes DESC
+LIMIT 20;
 
--- Function to clean old packets (older than X days)
+-- INDEXES
+
+CREATE INDEX IF NOT EXISTS idx_packets_timestamp ON packets(timestamp);
+CREATE INDEX IF NOT EXISTS idx_packets_protocol ON packets(protocol);
+CREATE INDEX IF NOT EXISTS idx_packets_length ON packets(packet_length);
+CREATE INDEX IF NOT EXISTS idx_packets_capture_interface ON packets(capture_interface);
+CREATE INDEX IF NOT EXISTS idx_packets_vlan_id ON packets(vlan_id);
+
+CREATE INDEX IF NOT EXISTS idx_ip_packets_source_ip ON ip_packets(source_ip);
+CREATE INDEX IF NOT EXISTS idx_ip_packets_destination_ip ON ip_packets(destination_ip);
+CREATE INDEX IF NOT EXISTS idx_ip_packets_packet_id ON ip_packets(packet_id);
+
+CREATE INDEX IF NOT EXISTS idx_tcp_packets_source_port ON tcp_packets(source_port);
+CREATE INDEX IF NOT EXISTS idx_tcp_packets_destination_port ON tcp_packets(destination_port);
+CREATE INDEX IF NOT EXISTS idx_udp_packets_source_port ON udp_packets(source_port);
+CREATE INDEX IF NOT EXISTS idx_udp_packets_destination_port ON udp_packets(destination_port);
+
+-- FUNCTIONS
+
 CREATE OR REPLACE FUNCTION cleanup_old_packets(days_old INTEGER DEFAULT 30)
 RETURNS INTEGER AS $$
 DECLARE
@@ -147,10 +199,8 @@ BEGIN
     WHERE timestamp < NOW() - INTERVAL '1 day' * days_old;
     GET DIAGNOSTICS rows_deleted = ROW_COUNT;
     RETURN rows_deleted;
-END;
-$$ LANGUAGE plpgsql;
+END; $$ LANGUAGE plpgsql;
 
--- Function to get packet count by date range
 CREATE OR REPLACE FUNCTION get_packet_count_by_date_range(
     start_date TIMESTAMP WITH TIME ZONE,
     end_date TIMESTAMP WITH TIME ZONE,
@@ -174,7 +224,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to get top protocols by byte count
 CREATE OR REPLACE FUNCTION get_top_protocols_by_bytes(limit_count INTEGER DEFAULT 10)
 RETURNS TABLE(
     protocol VARCHAR(10),
@@ -191,13 +240,11 @@ BEGIN
     GROUP BY p.protocol
     ORDER BY SUM(p.packet_length) DESC
     LIMIT limit_count;
-END;
-$$ LANGUAGE plpgsql;
+END; $$ LANGUAGE plpgsql;
 
--- 12. Triggers for Automatic Updates
+-- TRIGGERS
 
--- Trigger function to update timestamps when packet data changes
-CREATE OR REPLACE FUNCTION update_modified_column()
+CREATE OR REPLACE FUNCTION update_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.timestamp = NOW();
@@ -205,43 +252,37 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Note: Since we're mainly dealing with inserts, we don't need a trigger for updates
--- But we can add one for future expansion if needed
+CREATE TRIGGER trigger_update_timestamp
+    BEFORE UPDATE ON packets
+    FOR EACH ROW
+    EXECUTE FUNCTION update_timestamp();
 
--- 13. Sample Data Insertion Function
+-- FUNCTION
 CREATE OR REPLACE FUNCTION insert_simple_packet(
-    src_ip INET,
-    dst_ip INET,
-    src_port SMALLINT,
-    dst_port SMALLINT,
     proto VARCHAR(10),
     length INTEGER,
     payload BYTEA DEFAULT NULL,
-    interface VARCHAR(50) DEFAULT NULL
+    interface VARCHAR(50) DEFAULT NULL,
+    vlan_id_val SMALLINT DEFAULT NULL
 )
 RETURNS BIGINT AS $$
 DECLARE
     packet_id BIGINT;
 BEGIN
     INSERT INTO packets (
-        source_ip, destination_ip, source_port, destination_port,
-        protocol, packet_length, payload, capture_interface
+        protocol, packet_length, payload, capture_interface, vlan_id
     ) VALUES (
-        src_ip, dst_ip, src_port, dst_port,
-        proto, length, payload, interface
-    ) RETURNING id INTO packet_id;
+        proto, length, payload, interface, vlan_id_val
+    ) RETURNING packet_id INTO packet_id;
 
     RETURN packet_id;
-END;
-$$ LANGUAGE plpgsql;
+END; $$ LANGUAGE plpgsql;
 
--- 14. Procedures for Bulk Operations
+-- PROCEDURES
 
--- Procedure to bulk insert packets (can be extended for actual packet processing)
 CREATE OR REPLACE PROCEDURE bulk_insert_packets(
     packet_data JSONB[]
 )
-LANGUAGE plpgsql
 AS $$
 DECLARE
     pkt JSONB;
@@ -249,67 +290,102 @@ BEGIN
     FOREACH pkt IN ARRAY packet_data
     LOOP
         INSERT INTO packets (
-            source_ip, destination_ip, source_port, destination_port,
-            protocol, packet_length, payload, capture_interface
+            protocol, packet_length, payload, capture_interface, vlan_id
         ) VALUES (
-            (pkt->>'source_ip')::INET,
-            (pkt->>'destination_ip')::INET,
-            (pkt->>'source_port')::SMALLINT,
-            (pkt->>'destination_port')::SMALLINT,
             pkt->>'protocol',
             (pkt->>'packet_length')::INTEGER,
             (pkt->>'payload')::BYTEA,
-            (pkt->>'capture_interface')
+            (pkt->>'capture_interface'),
+            (pkt->>'vlan_id')::SMALLINT
         );
     END LOOP;
-END;
-$$;
+END; $$ LANGUAGE plpgsql;
 
--- Procedure to create protocol-specific entries for a packet
 CREATE OR REPLACE PROCEDURE create_protocol_entries(
     packet_id BIGINT,
     protocol_data JSONB
 )
-LANGUAGE plpgsql
 AS $$
 DECLARE
-    protocol VARCHAR(10);
+    protocol JSONB;
 BEGIN
-    protocol := protocol_data->>'protocol';
-
-    IF protocol = 'TCP' THEN
-        INSERT INTO tcp_packets (
-            packet_id, sequence_number, acknowledgment_number, header_length,
-            flags, window_size, checksum, urgent_pointer
+    protocol := protocol_data->>'IP';
+    IF protocol IS NOT NULL THEN
+        INSERT INTO ip_packets (
+            packet_id, version, header_length, type_of_service,
+            source_ip, destination_ip, total_length, identification,
+            flags, fragment_offset, ttl, checksum
         ) VALUES (
             packet_id,
-            (protocol_data->>'sequence_number')::INTEGER,
-            (protocol_data->>'acknowledgment_number')::INTEGER,
-            (protocol_data->>'header_length')::SMALLINT,
-            (protocol_data->>'flags')::SMALLINT,
-            (protocol_data->>'window_size')::SMALLINT,
-            (protocol_data->>'checksum')::INTEGER,
-            (protocol_data->>'urgent_pointer')::SMALLINT
+            COALESCE((protocol->>'version')::SMALLINT, 4),
+            COALESCE((protocol->>'header_length')::INTEGER, 20),
+            (protocol->>'type_of_service')::SMALLINT,
+            '0.0.0.0'::INET + (protocol->>'source_ip')::BIGINT,
+            '0.0.0.0'::INET + (protocol->>'destination_ip')::BIGINT,
+            (protocol->>'total_length')::INTEGER,
+            (protocol->>'identification')::INTEGER,
+            (protocol->>'flags')::SMALLINT,
+            (protocol->>'fragment_offset')::SMALLINT,
+            COALESCE((protocol->>'ttl')::INTEGER, 64),
+            (protocol->>'checksum')::INTEGER
         );
-    ELSIF protocol = 'UDP' THEN
+    END IF;
+
+    protocol := protocol_data->>'TCP';
+    IF protocol IS NOT NULL THEN
+        INSERT INTO tcp_packets (
+            packet_id, sequence_number, acknowledgment_number, source_port, destination_port, header_length, 
+            fin_flag, syn_flag, rst_flag, psh_flag, ack_flag, urg_flag, ece_flag, cwr_flag,
+            window_size, checksum, urgent_pointer
+            ) VALUES (
+            packet_id,
+            (protocol->>'sequence_number')::BIGINT,
+            (protocol->>'acknowledgment_number')::BIGINT,
+            (protocol->>'source_port')::INTEGER,
+            (protocol->>'destination_port')::INTEGER,
+            (protocol->>'header_length')::INTEGER,
+            (protocol->>'fin_flag')::SMALLINT,
+            (protocol->>'syn_flag')::SMALLINT,
+            (protocol->>'rst_flag')::SMALLINT,
+            (protocol->>'psh_flag')::SMALLINT,
+            (protocol->>'ack_flag')::SMALLINT,
+            (protocol->>'urg_flag')::SMALLINT,
+            (protocol->>'ece_flag')::SMALLINT,
+            (protocol->>'cwr_flag')::SMALLINT,
+            (protocol->>'window_size')::INTEGER,
+            (protocol->>'checksum')::INTEGER,
+            (protocol->>'urgent_pointer')::SMALLINT
+            );
+    END IF; 
+
+    protocol := protocol_data->>'UDP';
+    IF protocol IS NOT NULL THEN
         INSERT INTO udp_packets (
             packet_id, length, checksum
         ) VALUES (
             packet_id,
-            (protocol_data->>'length')::SMALLINT,
-            (protocol_data->>'checksum')::INTEGER
+            (protocol->>'length')::INTEGER,
+            (protocol->>'source_port')::INTEGER,
+            (protocol->>'destination_port')::INTEGER,
+            (protocol->>'checksum')::INTEGER
         );
-    ELSIF protocol = 'ICMP' THEN
+    END IF;
+
+    protocol := protocol->>'ICMP';
+    IF protocol IS NOT NULL THEN
         INSERT INTO icmp_packets (
             packet_id, type, code, checksum, icmp_data
         ) VALUES (
             packet_id,
-            (protocol_data->>'type')::SMALLINT,
-            (protocol_data->>'code')::SMALLINT,
-            (protocol_data->>'checksum')::INTEGER,
-            (protocol_data->>'icmp_data')::BYTEA
+            (protocol->>'type')::SMALLINT,
+            (protocol->>'code')::SMALLINT,
+            (protocol->>'checksum')::INTEGER,
+            (protocol->>'icmp_data')::BYTEA
         );
-    ELSIF protocol = 'ARP' THEN
+    END IF;
+
+    protocol := protocol->>'ARP';
+    IF protocol IS NOT NULL THEN
         INSERT INTO arp_packets (
             packet_id, hardware_type, protocol_type, hardware_length,
             protocol_length, operation, sender_hardware_address,
@@ -317,56 +393,43 @@ BEGIN
             target_protocol_address
         ) VALUES (
             packet_id,
-            (protocol_data->>'hardware_type')::SMALLINT,
-            (protocol_data->>'protocol_type')::SMALLINT,
-            (protocol_data->>'hardware_length')::SMALLINT,
-            (protocol_data->>'protocol_length')::SMALLINT,
-            (protocol_data->>'operation')::SMALLINT,
-            (protocol_data->>'sender_hardware_address')::MACADDR,
-            (protocol_data->>'sender_protocol_address')::INET,
-            (protocol_data->>'target_hardware_address')::MACADDR,
-            (protocol_data->>'target_protocol_address')::INET
+            (protocol->>'hardware_type')::SMALLINT,
+            (protocol->>'protocol_type')::SMALLINT,
+            (protocol->>'hardware_length')::SMALLINT,
+            (protocol->>'protocol_length')::SMALLINT,
+            (protocol->>'operation')::SMALLINT,
+            (protocol->>'sender_hardware_address')::MACADDR,
+            '0.0.0.0'::INET + (protocol->>'sender_protocol_address')::BIGINT,
+            (protocol->>'target_hardware_address')::MACADDR,
+            '0.0.0.0'::INET + (protocol->>'target_protocol_address')::BIGINT
         );
     END IF;
-END;
-$$;
+END; $$ LANGUAGE plpgsql;
 
--- Universal procedure to handle packet insertion with protocol data
 CREATE OR REPLACE PROCEDURE insert_packet_with_protocol_data(
     packet_data JSONB,
     protocol_data JSONB DEFAULT NULL
 )
-LANGUAGE plpgsql
 AS $$
 DECLARE
     packet_id BIGINT;
 BEGIN
-    -- Insert the base packet
-    INSERT INTO packets (
-        source_ip, destination_ip, source_port, destination_port,
-        protocol, packet_length, payload, capture_interface
-    ) VALUES (
-        (packet_data->>'source_ip')::INET,
-        (packet_data->>'destination_ip')::INET,
-        (packet_data->>'source_port')::SMALLINT,
-        (packet_data->>'destination_port')::SMALLINT,
+    SELECT insert_simple_packet(
         packet_data->>'protocol',
         (packet_data->>'packet_length')::INTEGER,
         (packet_data->>'payload')::BYTEA,
-        (packet_data->>'capture_interface')
-    ) RETURNING id INTO packet_id;
+        (packet_data->>'capture_interface'),
+        (packet_data->>'vlan_id')::SMALLINT
+    ) INTO packet_id;
 
     IF protocol_data IS NOT NULL THEN
-        PERFORM create_protocol_entries(packet_id, protocol_data);
+        CALL create_protocol_entries(packet_id, protocol_data);
     END IF;
-END;
-$$;
+END; $$ LANGUAGE plpgsql;
 
--- Procedure to bulk insert packets with protocol data
 CREATE OR REPLACE PROCEDURE bulk_insert_packets_with_protocol_data(
     packet_data_list JSONB[]
 )
-LANGUAGE plpgsql
 AS $$
 DECLARE
     pkt JSONB;
@@ -378,5 +441,4 @@ BEGIN
             pkt->'protocol_data'
         );
     END LOOP;
-END;
-$$;
+END; $$ LANGUAGE plpgsql

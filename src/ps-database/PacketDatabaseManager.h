@@ -14,6 +14,7 @@ class PacketDatabaseManager
   public:
     using Ptr = std::unique_ptr<PacketDatabaseManager>;
 
+    explicit PacketDatabaseManager();
     explicit PacketDatabaseManager(DBConnector::Ptr dbConnector);
     ~PacketDatabaseManager();
 
@@ -38,32 +39,5 @@ class PacketDatabaseManager
     DBConnector::Ptr m_dbConnector;
 
     // Helper methods for SQL generation
-    template <typename T>
-    std::string serializePacketData(const T& data);
 };
-
-template <typename T>
-std::string PacketDatabaseManager::serializePacketData(const T& data)
-{
-    json dataAsJson = json::array({data});
-    return dataAsJson.dump();
-}
-
-template <>
-std::string PacketDatabaseManager::serializePacketData<PacketData>(const PacketData& packetData);
-
-template <>
-std::string PacketDatabaseManager::serializePacketData<IPPacketData>(const IPPacketData& ipData);
-
-template <>
-std::string PacketDatabaseManager::serializePacketData<TCPPacketData>(const TCPPacketData& tcpData);
-
-template <>
-std::string PacketDatabaseManager::serializePacketData<UDPPacketData>(const UDPPacketData& udpData);
-
-template <>
-std::string PacketDatabaseManager::serializePacketData<ICMPPacketData>(const ICMPPacketData& icmpData);
-
-template <>
-std::string PacketDatabaseManager::serializePacketData<ARPPacketData>(const ARPPacketData& arpData);
 } // namespace ps

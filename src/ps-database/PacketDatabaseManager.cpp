@@ -10,19 +10,30 @@
 
 namespace ps
 {
+PacketDatabaseManager::PacketDatabaseManager()
+    : m_dbConnector(std::make_shared<DBConnector>())
+{
+    LOG_INFO("1");
+    m_dbConnector->connect();
+}
+
 PacketDatabaseManager::PacketDatabaseManager(DBConnector::Ptr dbConnector)
     : m_dbConnector(dbConnector)
-{}
+{
+    LOG_INFO("2");
+    m_dbConnector->connect();
+}
 
 PacketDatabaseManager::~PacketDatabaseManager()
 {}
 
 bool PacketDatabaseManager::insertPacket(const PacketData& packetData)
 {
+    LOG_INFO("3");
     try
     {
         std::string insertSql = "PERFORM insert_packet_with_protocol_data($1)";
-        pqxx::params params = {serializePacketData(packetData)};
+        pqxx::params params = {json(packetData).dump()};
 
         m_dbConnector->executeQuery(insertSql, params);
         return true;
@@ -36,6 +47,7 @@ bool PacketDatabaseManager::insertPacket(const PacketData& packetData)
 
 bool PacketDatabaseManager::insertPacketWithProtocolData(const FullPacket::Ptr packet)
 {
+    LOG_INFO("4");
     if (!packet->packetData)
     {
         LOG_ERROR("No packet data provided. Could not write to database");
@@ -44,34 +56,37 @@ bool PacketDatabaseManager::insertPacketWithProtocolData(const FullPacket::Ptr p
 
     try
     {
-        pqxx::params params = {serializePacketData(*packet->packetData)};
+        json packetData{*packet->packetData};
+        json protocolData;
 
         if (packet->ipPacketData)
-            params.append(serializePacketData(*packet->ipPacketData));
+            protocolData["IP"] = json{*packet->ipPacketData}[0];
         if (packet->tcpPacketData)
-            params.append(serializePacketData(*packet->tcpPacketData));
+            protocolData["TCP"] = json{*packet->tcpPacketData}[0];
         if (packet->udpPacketData)
-            params.append(serializePacketData(*packet->udpPacketData));
+            protocolData["UDP"] = json{*packet->udpPacketData}[0];
         if (packet->icmpPacketData)
-            params.append(serializePacketData(*packet->icmpPacketData));
+            protocolData["ICMP"] = json{*packet->icmpPacketData}[0];
         if (packet->arpPacketData)
-            params.append(serializePacketData(*packet->arpPacketData));
+            protocolData["ARP"] = json{*packet->arpPacketData}[0];
 
-        std::string insertSql;
-        switch (size_t size = params.size(); size)
+        LOG_INFO("Hello");
+        if (protocolData.empty())
         {
-        case 1:
-            insertSql = "PERFORM insert_packet_with_protocol_data($1)";
-            break;
-        case 2:
-            insertSql = "PERFORM insert_packet_with_protocol_data($1, $2)";
-            break;
-        default:
-            LOG_ERROR("Unexpected number of params '{}'", size);
-            return false;
+            // LOG_INFO("1");
+            m_dbConnector->executeQuery("CALL insert_packet_with_protocol_data($1)", pqxx::params{1});
+        }
+        else
+        {
+            if (!m_dbConnector)
+            {
+                LOG_INFO("HOHOHOHO");
+                return false;
+            }
+            // LOG_INFO("2");
+            m_dbConnector->executeQuery("CALL insert_packet_with_protocol_data($1, $2)", pqxx::params{1,2});
         }
 
-        m_dbConnector->executeQuery(insertSql, params);
         return true;
     }
     catch (const std::exception& exp)

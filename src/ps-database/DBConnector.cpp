@@ -4,9 +4,16 @@
 
 namespace ps
 {
+DBConnector::DBConnector()
+{
+    LOG_INFO("Entering DBConnector constructor ()");
+}
+
 DBConnector::DBConnector(const std::string& connectionParameters)
     : m_connectionString(connectionParameters)
-{}
+{
+    LOG_INFO("Entering DBConnector constructor (std::string)");
+}
 
 DBConnector::~DBConnector()
 {
@@ -15,6 +22,7 @@ DBConnector::~DBConnector()
 
 bool DBConnector::connect()
 {
+    LOG_INFO("Entering connect");
     try
     {
         m_connection.close();
@@ -45,6 +53,7 @@ pqxx::work DBConnector::startTransaction()
 
 pqxx::result DBConnector::executeQuery(const std::string& query, const pqxx::params& params)
 {
+    LOG_INFO("Entering execute query");
     try
     {
         pqxx::work txn{m_connection};

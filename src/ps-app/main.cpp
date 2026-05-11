@@ -2,6 +2,7 @@
 #include <memory>
 
 #include <ps-io/CsvWriter.h>
+#include <ps-io/DatabaseWriter.h>
 #include <ps-io/IReader.h>
 #include <ps-io/IWriter.h>
 #include <ps-io/NetworkReader.h>
@@ -35,7 +36,8 @@ int main(int argc, char* argv[])
     else
         reader = std::make_unique<ps::NetworkReader>(settings.m_time);
 
-    writer = std::make_unique<ps::CsvWriter>(settings.m_outfile);
+    // writer = std::make_unique<ps::CsvWriter>(settings.m_outfile);
+    writer = std::make_unique<ps::DatabaseWriter>();
     Application app(std::move(reader), std::move(writer));
     app.start();
 
